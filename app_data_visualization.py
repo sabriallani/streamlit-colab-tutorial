@@ -1,15 +1,3 @@
-app_data_visualization.py"""Application 3 : Visualisation des données d'achat.
-
-Cette application lit les données stockées par le formulaire d'achat de
-véhicule (voir `app_vehicle_form.py`) et propose un filtrage par type
-de véhicule. Une fois filtrées, les données sont affichées puis
-agrégées pour produire un graphique. La fonction `st.bar_chart` est
-utilisée pour afficher un diagramme en barres de manière simple :
-elle construit automatiquement la spécification Altair en se basant
-sur les colonnes du DataFrame【54672515633451†L209-L214】, ce qui
-simplifie la création du graphique【54672515633451†L218-L239】.
-"""
-
 import streamlit as st
 import pandas as pd
 
