@@ -1,13 +1,3 @@
-"""Application 1 : formulaire d'achat de véhicule.
-
-Cette application Streamlit illustre comment regrouper plusieurs widgets
-dans un formulaire (`st.form`) afin de collecter des informations sur
-l'achat d'un véhicule. Les données saisies sont stockées dans
-`st.session_state` sous forme de DataFrame et peuvent être réutilisées
-par d'autres pages (par exemple pour la visualisation). Chaque section
-du formulaire est commentée en français pour faciliter la compréhension.
-"""
-
 import streamlit as st
 import pandas as pd
 from datetime import date
