@@ -1,156 +1,551 @@
-# Tutoriel : trois applications Streamlit pour Colab
+# Tutoriel : Trois Applications Streamlit pour Google Colab
 
-Ce tutoriel explique comment construire trois mini‑applications Streamlit
-en Python :
+Ce tutoriel explique comment construire trois mini-applications Streamlit en Python, optimisées pour fonctionner dans l'environnement Google Colab :
 
-1. **Formulaire d'achat de véhicule** – collecte des informations via un
-   formulaire structuré et les enregistre dans la session.
-2. **Chatbot simple** – illustre l'utilisation des éléments de chat pour
-   créer une conversation interactive sans dépendance externe.
-3. **Visualisation des achats** – regroupe et affiche les données
-   collectées sous forme de tableau et de diagramme en barres.
+1. **Formulaire d'achat de véhicule** – collecte des informations via un formulaire structuré et les enregistre dans la session
+2. **Chatbot simple** – illustre l'utilisation des éléments de chat pour créer une conversation interactive sans dépendance externe
+3. **Visualisation des achats** – regroupe et affiche les données collectées sous forme de tableau et de diagramme en barres
 
-Le tutoriel est rédigé en français et chaque étape est commentée pour
-aider à la compréhension. Les fichiers sources se trouvent dans ce
-dépôt :
+Le tutoriel est rédigé en français et chaque étape est commentée pour aider à la compréhension.
 
-* `app_vehicle_form.py` – application du formulaire.
-* `app_chatbot.py` – application du chatbot.
-* `app_data_visualization.py` – application de visualisation.
+## Structure du Projet
 
-## 1. Préparation de l'environnement
+```
+streamlit-colab-tutorial/
+├── app_vehicle_form.py          # Application du formulaire
+├── app_chatbot.py               # Application du chatbot
+├── app_data_visualization.py    # Application de visualisation
+└── README.md                    # Ce fichier
+```
 
-Dans un nouveau notebook Colab :
+## 1. Préparation de l'Environnement
 
-1. Installer Streamlit et les dépendances nécessaires :
+### Installation des Dépendances
 
-   ```python
-   !pip install streamlit pandas pyngrok
-   ```
+Dans un nouveau notebook Google Colab, exécutez la cellule suivante :
 
-   * `streamlit` : framework pour créer des apps web interactives.
-   * `pandas` : manipulation de tables et de DataFrames.
-   * `pyngrok` : publication d'un port local sur Internet (optionnel pour Colab).
+```python
+!pip install streamlit pandas matplotlib seaborn pyngrok
+```
 
-2. Télécharger ou créer les fichiers Python dans votre environnement. Par
-   exemple :
+**Description des packages :**
+- `streamlit` : Framework pour créer des applications web interactives
+- `pandas` : Manipulation de données et DataFrames
+- `matplotlib` & `seaborn` : Visualisation de données
+- `pyngrok` : Exposition d'un port local sur Internet (pour Colab)
 
-   ```python
-   # enregistrez le code du formulaire dans un fichier
-   %%writefile app_vehicle_form.py
-   # (coller ici le contenu du fichier app_vehicle_form.py)
-   ```
+### Configuration de l'Environnement Colab
 
-   Répétez l'opération pour `app_chatbot.py` et
-   `app_data_visualization.py` ou utilisez les fichiers fournis.
+```python
+# Télécharger les fichiers du projet (optionnel si vous les créez manuellement)
+import os
+import wget
 
-3. Exécuter une application : la commande suivante lance un script
-   Streamlit et renvoie l'adresse locale du serveur :
+# Créer le répertoire de travail
+os.makedirs('streamlit_apps', exist_ok=True)
+os.chdir('streamlit_apps')
+```
 
-   ```python
-   !streamlit run app_vehicle_form.py --server.port 8501 &> logs.txt &
-   ```
+### Création des Fichiers d'Application
 
-   Sur Google Colab, les pages Web ne sont pas accessibles
-   directement. Vous pouvez utiliser `pyngrok` ou [LocalTunnel](https://theboroer.github.io/localtunnel-www/) pour exposer le port 8501.
-   Par exemple :
+Utilisez la commande magique `%%writefile` pour créer chaque fichier :
 
-   ```python
-   from pyngrok import ngrok
-   public_url = ngrok.connect(8501)
-   public_url
-   ```
+```python
+%%writefile app_vehicle_form.py
+# Le contenu du fichier sera collé ici
+```
 
-   Ouvrez l'URL retournée pour accéder à votre application.
+## 2. Application 1 : Formulaire d'Achat de Véhicule
 
-## 2. Application 1 : Formulaire d'achat de véhicule
+### Fonctionnalités Principales
 
-Ce module montre comment regrouper plusieurs champs dans un
-`st.form` pour contrôler la soumission. L'utilisation d'un formulaire
-permet d'envoyer toutes les données en une seule fois au clic sur
-`Envoyer`. Les données sont ensuite stockées dans la variable
-`st.session_state["vehicle_data"]` pour être réutilisées.
+- **Formulaire structuré** avec validation des données
+- **Persistance des données** dans `st.session_state`
+- **Interface utilisateur intuitive** avec différents types de widgets
 
-### Étapes principales
+### Code Principal
 
-1. **Initialiser l'état** : vérifier si `vehicle_data` existe dans
-   `st.session_state` ; sinon créer un DataFrame vide avec les colonnes
-   nécessaires.
-2. **Créer le formulaire** :
-   * Définir le conteneur `with st.form(key="vehicle_form"):`.
-   * Ajouter des widgets comme `st.text_input` pour le nom et le
-     contact, `st.selectbox` pour le type de véhicule et le mode de
-     paiement, `st.number_input` pour le prix et `st.date_input` pour
-     la date d'achat. La fonction `st.date_input` affiche un
-     sélecteur de date configurable【648397162177243†L249-L259】.
-   * Terminer par un `st.form_submit_button("Envoyer")`. Chaque
-     formulaire doit comporter au moins un bouton de soumission【472898386844030†L193-L204】.
-3. **Traiter la soumission** : lorsque l'utilisateur clique sur le
-   bouton, concaténer la nouvelle ligne au DataFrame stocké dans la
-   session et afficher un message de réussite.
-4. **Afficher l'historique** : en dehors du formulaire, utiliser
-   `st.dataframe` pour présenter les données enregistrées.
+```python
+import streamlit as st
+import pandas as pd
+from datetime import datetime
 
-## 3. Application 2 : Chatbot simple
+def init_vehicle_data():
+    """Initialise les données de véhicules dans la session."""
+    if "vehicle_data" not in st.session_state:
+        st.session_state["vehicle_data"] = pd.DataFrame(columns=[
+            "Nom", "Contact", "Type", "Prix", "Mode_Paiement", "Date_Achat"
+        ])
 
-Cette application utilise les nouveaux widgets de chat :
+def main():
+    st.title("🚗 Formulaire d'Achat de Véhicule")
+    st.markdown("---")
+    
+    init_vehicle_data()
+    
+    # Création du formulaire
+    with st.form(key="vehicle_form", clear_on_submit=True):
+        st.subheader("Informations d'Achat")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            nom = st.text_input("Nom complet *", placeholder="Ex: Jean Dupont")
+            contact = st.text_input("Contact *", placeholder="Email ou téléphone")
+            
+        with col2:
+            type_vehicule = st.selectbox(
+                "Type de véhicule *",
+                ["Voiture", "Moto", "Camion", "SUV", "Autre"]
+            )
+            prix = st.number_input(
+                "Prix (€) *", 
+                min_value=0.0, 
+                step=100.0,
+                format="%.2f"
+            )
+        
+        mode_paiement = st.selectbox(
+            "Mode de paiement *",
+            ["Comptant", "Crédit", "Leasing", "Autre"]
+        )
+        
+        date_achat = st.date_input(
+            "Date d'achat *",
+            value=datetime.now().date()
+        )
+        
+        # Bouton de soumission
+        submitted = st.form_submit_button("💾 Enregistrer l'Achat", type="primary")
+        
+        if submitted:
+            # Validation des champs obligatoires
+            if not nom or not contact or prix <= 0:
+                st.error("⚠️ Veuillez remplir tous les champs obligatoires (*)")
+            else:
+                # Ajout des données
+                nouvelle_ligne = pd.DataFrame({
+                    "Nom": [nom],
+                    "Contact": [contact],
+                    "Type": [type_vehicule],
+                    "Prix": [prix],
+                    "Mode_Paiement": [mode_paiement],
+                    "Date_Achat": [date_achat]
+                })
+                
+                st.session_state["vehicle_data"] = pd.concat([
+                    st.session_state["vehicle_data"], 
+                    nouvelle_ligne
+                ], ignore_index=True)
+                
+                st.success(f"✅ Achat de {nom} enregistré avec succès !")
+    
+    # Affichage de l'historique
+    st.markdown("---")
+    st.subheader("📊 Historique des Achats")
+    
+    if not st.session_state["vehicle_data"].empty:
+        st.dataframe(
+            st.session_state["vehicle_data"],
+            use_container_width=True,
+            hide_index=True
+        )
+        st.info(f"📈 Total : {len(st.session_state['vehicle_data'])} achat(s) enregistré(s)")
+    else:
+        st.info("🔍 Aucun achat enregistré pour le moment.")
 
-* `st.chat_message` insère un conteneur pour un message et applique
-  automatiquement un style en fonction de l'auteur (utilisateur ou
-  assistant). Il prend un paramètre `name` et peut afficher une icône【266638346480461†L188-L223】.
-* `st.chat_input` crée un champ de saisie optimisé pour la
-  conversation, avec un texte indicatif et un nombre maximal de
-  caractères【911194705357470†L188-L223】.
+if __name__ == "__main__":
+    main()
+```
 
-### Logique de base
+### Points Clés
 
-1. **Initialiser l'historique** : créer `st.session_state["messages"]` si
-   nécessaire pour stocker des dicts `{role: ..., content: ...}`.
-2. **Afficher l'historique** : parcourir la liste et appeler
-   `st.chat_message(role)` pour chaque message.
-3. **Saisir un nouveau message** : récupérer la chaîne saisie via
-   `st.chat_input`. Si elle n'est pas vide, l'ajouter à l'historique
-   avec le rôle `user` et l'afficher.
-4. **Générer une réponse** : dans cet exemple, on vérifie quelques
-   mots‑clés dans le message et on renvoie une réponse fixe. Dans un
-   projet réel, cette partie pourrait appeler un modèle de langage ou
-   un service externe.
-5. **Afficher la réponse** : utiliser `st.chat_message("assistant")` pour
-   montrer la réponse et l'ajouter à l'historique.
+1. **Gestion de l'état** : Utilisation de `st.session_state` pour persister les données
+2. **Validation** : Vérification des champs obligatoires avant l'enregistrement
+3. **Interface responsive** : Utilisation de colonnes pour optimiser l'espace
+4. **Feedback utilisateur** : Messages de succès et d'erreur appropriés
 
-## 4. Application 3 : Visualisation des achats
+## 3. Application 2 : Chatbot Simple
 
-La troisième application exploite les données enregistrées par le
-formulaire pour fournir un tableau filtrable et un graphique. On
-utilise `st.multiselect` pour choisir les types de véhicules à
-afficher, puis on agrège les données et on utilise `st.bar_chart` pour
-dessiner un diagramme :
+### Fonctionnalités
 
-1. **Accéder aux données** : récupérer `st.session_state["vehicle_data"]`.
-   Si la table est vide, afficher un message informatif.
-2. **Filtrer** : les valeurs uniques de la colonne « Type » sont
-   proposées dans un `st.multiselect` afin que l'utilisateur puisse
-   sélectionner un ou plusieurs types.
-3. **Afficher le tableau filtré** : `st.dataframe` permet de voir les
-   enregistrements correspondant à la sélection.
-4. **Créer le graphique** : grouper par type et compter le nombre
-   d'achats. `st.bar_chart` prend en entrée un DataFrame indexé par
-   « Type » et dessine automatiquement un diagramme en barres en
-   utilisant les colonnes pour définir l'axe des ordonnées【54672515633451†L209-L214】. La
-   fonction est un raccourci vers `st.altair_chart` et déduit la
-   spécification Altair à partir des données【54672515633451†L218-L239】.
+- **Interface de chat moderne** avec `st.chat_message` et `st.chat_input`
+- **Historique de conversation** persistant
+- **Réponses contextuelles** basées sur des mots-clés
 
-## 5. Conseils de déploiement
+### Code Principal
 
-* **Ordre d'exécution** : si vous souhaitez utiliser la visualisation
-  après avoir saisi des données, lancez d'abord `app_vehicle_form.py`
-  pour créer quelques enregistrements. Ensuite, ouvrez
-  `app_data_visualization.py` ; l'historique des achats sera déjà
-  présent en mémoire tant que vous exécutez les applications dans la
-  même session Python.
-* **Édition** : n'hésitez pas à adapter les listes (types de véhicules,
-  modes de paiement) à vos besoins. Vous pouvez également enrichir le
-  chatbot en ajoutant une logique plus sophistiquée ou en le connectant
-  à un modèle externe.
-* **Licence** : ce code est fourni à titre éducatif et peut être
-  utilisé et modifié librement.
+```python
+import streamlit as st
+import random
+from datetime import datetime
+
+def init_chat_history():
+    """Initialise l'historique du chat."""
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = [
+            {
+                "role": "assistant",
+                "content": "👋 Bonjour ! Je suis votre assistant virtuel. Comment puis-je vous aider aujourd'hui ?",
+                "timestamp": datetime.now()
+            }
+        ]
+
+def get_bot_response(user_message):
+    """Génère une réponse basée sur le message utilisateur."""
+    message_lower = user_message.lower()
+    
+    # Réponses contextuelles
+    responses = {
+        "bonjour": [
+            "Bonjour ! Comment allez-vous ?",
+            "Salut ! Que puis-je faire pour vous ?",
+            "Hello ! Ravi de vous parler !"
+        ],
+        "voiture": [
+            "🚗 Les voitures sont fascinantes ! Quel type vous intéresse ?",
+            "🔧 Avez-vous des questions sur l'entretien automobile ?",
+            "🚙 Électrique, essence ou hybride ?"
+        ],
+        "prix": [
+            "💰 Les prix varient selon le modèle et l'année.",
+            "💵 Quel est votre budget approximatif ?",
+            "📊 Souhaitez-vous comparer des prix ?"
+        ],
+        "aide": [
+            "🤝 Je suis là pour vous aider ! Posez-moi vos questions.",
+            "📞 N'hésitez pas à me demander ce dont vous avez besoin.",
+            "💡 Je peux vous renseigner sur les véhicules et leurs caractéristiques."
+        ]
+    }
+    
+    # Recherche de mots-clés
+    for keyword, possible_responses in responses.items():
+        if keyword in message_lower:
+            return random.choice(possible_responses)
+    
+    # Réponse par défaut
+    default_responses = [
+        "🤔 Intéressant ! Pouvez-vous me donner plus de détails ?",
+        "📝 Je prends note. Que souhaitez-vous savoir d'autre ?",
+        "💭 C'est une bonne question ! Laissez-moi y réfléchir...",
+        "🎯 Je comprends votre point de vue. Comment puis-je vous aider davantage ?"
+    ]
+    
+    return random.choice(default_responses)
+
+def main():
+    st.title("🤖 Assistant Virtuel")
+    st.markdown("*Votre compagnon conversationnel intelligent*")
+    st.markdown("---")
+    
+    init_chat_history()
+    
+    # Affichage de l'historique des messages
+    chat_container = st.container()
+    
+    with chat_container:
+        for message in st.session_state["messages"]:
+            with st.chat_message(message["role"]):
+                st.write(message["content"])
+                if "timestamp" in message:
+                    st.caption(f"📅 {message['timestamp'].strftime('%H:%M:%S')}")
+    
+    # Interface de saisie
+    if prompt := st.chat_input("💬 Tapez votre message ici..."):
+        # Ajout du message utilisateur
+        user_message = {
+            "role": "user",
+            "content": prompt,
+            "timestamp": datetime.now()
+        }
+        st.session_state["messages"].append(user_message)
+        
+        # Affichage du message utilisateur
+        with st.chat_message("user"):
+            st.write(prompt)
+            st.caption(f"📅 {user_message['timestamp'].strftime('%H:%M:%S')}")
+        
+        # Génération et affichage de la réponse
+        bot_response = get_bot_response(prompt)
+        assistant_message = {
+            "role": "assistant",
+            "content": bot_response,
+            "timestamp": datetime.now()
+        }
+        st.session_state["messages"].append(assistant_message)
+        
+        with st.chat_message("assistant"):
+            st.write(bot_response)
+            st.caption(f"📅 {assistant_message['timestamp'].strftime('%H:%M:%S')}")
+    
+    # Bouton pour effacer l'historique
+    st.markdown("---")
+    if st.button("🗑️ Effacer l'historique", type="secondary"):
+        st.session_state["messages"] = []
+        init_chat_history()
+        st.rerun()
+
+if __name__ == "__main__":
+    main()
+```
+
+### Améliorations Possibles
+
+- **Intégration d'API** : Connexion à des services comme OpenAI GPT
+- **Base de connaissances** : Réponses basées sur une FAQ
+- **Analyse de sentiment** : Adaptation du ton selon l'humeur de l'utilisateur
+
+## 4. Application 3 : Visualisation des Achats
+
+### Fonctionnalités
+
+- **Tableau filtrable** par type de véhicule
+- **Graphiques interactifs** avec Streamlit
+- **Statistiques descriptives** des données
+
+### Code Principal
+
+```python
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+def load_vehicle_data():
+    """Charge les données de véhicules depuis la session."""
+    if "vehicle_data" not in st.session_state:
+        st.session_state["vehicle_data"] = pd.DataFrame()
+    return st.session_state["vehicle_data"]
+
+def create_summary_stats(df):
+    """Crée des statistiques résumées."""
+    if df.empty:
+        return None
+    
+    stats = {
+        "Total des achats": len(df),
+        "Prix moyen": f"{df['Prix'].mean():.2f} €",
+        "Prix médian": f"{df['Prix'].median():.2f} €",
+        "Prix total": f"{df['Prix'].sum():.2f} €",
+        "Type le plus populaire": df['Type'].mode().iloc[0] if not df['Type'].mode().empty else "N/A"
+    }
+    return stats
+
+def main():
+    st.title("📊 Visualisation des Achats de Véhicules")
+    st.markdown("*Analyse et visualisation des données d'achat*")
+    st.markdown("---")
+    
+    # Chargement des données
+    df = load_vehicle_data()
+    
+    if df.empty:
+        st.warning("⚠️ Aucune donnée disponible.")
+        st.info("💡 Utilisez d'abord l'application de formulaire pour enregistrer des achats.")
+        st.stop()
+    
+    # Sidebar pour les filtres
+    st.sidebar.header("🔧 Filtres")
+    
+    # Filtre par type de véhicule
+    types_disponibles = df['Type'].unique().tolist()
+    types_selectionnes = st.sidebar.multiselect(
+        "Sélectionner les types de véhicules",
+        options=types_disponibles,
+        default=types_disponibles,
+        help="Choisissez un ou plusieurs types pour filtrer les données"
+    )
+    
+    # Filtre par gamme de prix
+    if not df['Prix'].empty:
+        prix_min, prix_max = st.sidebar.slider(
+            "Gamme de prix (€)",
+            min_value=float(df['Prix'].min()),
+            max_value=float(df['Prix'].max()),
+            value=(float(df['Prix'].min()), float(df['Prix'].max())),
+            step=100.0
+        )
+    else:
+        prix_min, prix_max = 0.0, 100000.0
+    
+    # Application des filtres
+    df_filtre = df[
+        (df['Type'].isin(types_selectionnes)) &
+        (df['Prix'] >= prix_min) &
+        (df['Prix'] <= prix_max)
+    ]
+    
+    # Affichage des statistiques
+    st.subheader("📈 Statistiques Générales")
+    stats = create_summary_stats(df_filtre)
+    
+    if stats:
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            st.metric("Total achats", stats["Total des achats"])
+        with col2:
+            st.metric("Prix moyen", stats["Prix moyen"])
+        with col3:
+            st.metric("Prix médian", stats["Prix médian"])
+        with col4:
+            st.metric("Prix total", stats["Prix total"])
+        with col5:
+            st.metric("Type populaire", stats["Type le plus populaire"])
+    
+    st.markdown("---")
+    
+    # Tableau des données filtrées
+    st.subheader("📋 Données Filtrées")
+    if not df_filtre.empty:
+        st.dataframe(
+            df_filtre,
+            use_container_width=True,
+            hide_index=True
+        )
+    else:
+        st.info("🔍 Aucune donnée ne correspond aux filtres sélectionnés.")
+    
+    st.markdown("---")
+    
+    # Visualisations
+    if not df_filtre.empty:
+        st.subheader("📊 Visualisations")
+        
+        # Graphique en barres par type
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("**Nombre d'achats par type**")
+            type_counts = df_filtre['Type'].value_counts()
+            st.bar_chart(type_counts)
+        
+        with col2:
+            st.write("**Prix moyen par type**")
+            prix_moyen = df_filtre.groupby('Type')['Prix'].mean()
+            st.bar_chart(prix_moyen)
+        
+        # Graphique de distribution des prix
+        st.write("**Distribution des prix**")
+        fig, ax = plt.subplots(figsize=(10, 6))
+        
+        sns.histplot(data=df_filtre, x='Prix', bins=10, kde=True, ax=ax)
+        ax.set_title('Distribution des Prix des Véhicules')
+        ax.set_xlabel('Prix (€)')
+        ax.set_ylabel('Fréquence')
+        
+        st.pyplot(fig)
+        
+        # Graphique temporel
+        if 'Date_Achat' in df_filtre.columns:
+            st.write("**Évolution des achats dans le temps**")
+            df_filtre['Date_Achat'] = pd.to_datetime(df_filtre['Date_Achat'])
+            achats_par_date = df_filtre.groupby('Date_Achat').size()
+            st.line_chart(achats_par_date)
+
+if __name__ == "__main__":
+    main()
+```
+
+## 5. Déploiement sur Google Colab
+
+### Méthode 1 : Utilisation de pyngrok
+
+```python
+# Installation et configuration de ngrok
+from pyngrok import ngrok
+import subprocess
+import threading
+
+def run_streamlit():
+    subprocess.run(["streamlit", "run", "app_vehicle_form.py", "--server.port", "8501"])
+
+# Lancer Streamlit en arrière-plan
+thread = threading.Thread(target=run_streamlit)
+thread.daemon = True
+thread.start()
+
+# Exposer le port avec ngrok
+public_url = ngrok.connect(8501)
+print(f"🌐 Application accessible à : {public_url}")
+```
+
+### Méthode 2 : Utilisation de LocalTunnel
+
+```python
+import subprocess
+import time
+
+# Lancer Streamlit
+subprocess.Popen(["streamlit", "run", "app_vehicle_form.py", "--server.port", "8501"])
+
+# Attendre que le serveur démarre
+time.sleep(5)
+
+# Installer et utiliser localtunnel
+subprocess.run(["npm", "install", "-g", "localtunnel"])
+subprocess.run(["lt", "--port", "8501"])
+```
+
+## 6. Conseils d'Optimisation
+
+### Performance
+
+- **Mise en cache** : Utilisez `@st.cache_data` pour les opérations coûteuses
+- **Session State** : Minimisez les données stockées en session
+- **Composants** : Séparez la logique en fonctions réutilisables
+
+### Interface Utilisateur
+
+- **Responsive Design** : Utilisez `st.columns()` pour l'adaptabilité
+- **Feedback Visuel** : Implémentez des messages de statut clairs
+- **Navigation** : Créez une barre latérale pour les options avancées
+
+### Sécurité
+
+- **Validation des entrées** : Vérifiez toujours les données utilisateur
+- **Gestion d'erreurs** : Implémentez une gestion robuste des exceptions
+- **Limites** : Définissez des limites sur les tailles de données
+
+## 7. Extensions Possibles
+
+### Fonctionnalités Avancées
+
+1. **Base de données** : Intégration avec SQLite ou PostgreSQL
+2. **Authentification** : Système de connexion utilisateur
+3. **Export de données** : Téléchargement en CSV, Excel, PDF
+4. **Notifications** : Alertes email ou SMS
+5. **API REST** : Intégration avec des services externes
+
+### Améliorations Techniques
+
+1. **Tests unitaires** : Framework pytest pour la validation
+2. **Documentation** : Génération automatique avec Sphinx
+3. **CI/CD** : Intégration continue avec GitHub Actions
+4. **Containerisation** : Déploiement avec Docker
+
+## Conclusion
+
+Ce tutoriel présente les bases pour créer des applications Streamlit interactives dans Google Colab. Les trois exemples couvrent les aspects essentiels :
+
+- **Collecte de données** avec des formulaires structurés
+- **Interaction utilisateur** via un système de chat
+- **Visualisation** et analyse de données
+
+Le code est modulaire et extensible, permettant d'ajouter facilement de nouvelles fonctionnalités selon vos besoins.
+
+## Ressources Utiles
+
+- [Documentation officielle Streamlit](https://docs.streamlit.io/)
+- [Galerie d'applications Streamlit](https://streamlit.io/gallery)
+- [Forum communautaire](https://discuss.streamlit.io/)
+- [GitHub - Exemples Streamlit](https://github.com/streamlit/streamlit-example)
+
+## Licence
+
+Ce projet est distribué sous licence MIT. Vous êtes libre de l'utiliser, le modifier et le distribuer selon les termes de cette licence.
+
+---
+
+*Créé avec ❤️ pour la communauté francophone de développeurs Python*
